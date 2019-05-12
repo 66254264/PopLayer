@@ -5,8 +5,14 @@ package com.github.codesniper.poplayer.pop;
 //Code Programming By MrCodeSniper on 2018/10/27.Best Wishes to You!  []~(~▽~)~* Cheers!
 
 
+import android.content.Context;
+import android.util.Log;
+
 import com.github.codesniper.poplayer.PopLayerView;
 import com.github.codesniper.poplayer.strategy.LayerLifecycle;
+import com.github.codesniper.poplayer.task.TaskManager;
+import com.github.codesniper.poplayer.task.TaskManagerV1;
+import com.github.codesniper.poplayer.util.PopUtils;
 
 import static com.github.codesniper.poplayer.config.LayerConfig.COUNTDOWN_CANCEL;
 import static com.github.codesniper.poplayer.config.LayerConfig.TRIGGER_CANCEL;
@@ -20,12 +26,13 @@ import static com.github.codesniper.poplayer.config.LayerConfig.TRIGGER_CANCEL;
 public class Popi implements Comparable<Popi> {
 
 
-
+    //弹窗描述
+    private String mPopDesc;
     //弹窗类型
     private PopType mType;
 
     //弹窗的唯一标识  ID不同的弹窗 视为不同的弹窗 throught the view shows the same
-    private int popId;
+    private long popId;
 
     //默认不进行 弹窗最大显示次数记录
     private int maxShowCount;
@@ -49,10 +56,14 @@ public class Popi implements Comparable<Popi> {
     //对应弹窗的点击后路径 默认适用于单业务弹窗
     private String routePath;
 
+    private Context mContext;
+
     public Popi(Builder builder) {
+        this.mPopDesc=builder.popDesc;
+        this.mContext=builder.mContext;
         this.priority = builder.mPriority;
         this.popId = builder.mPopId;
-        this.content = builder.mPopLayerView;
+        this.content = builder.mPopLayerView.getConcreateStrategy();
         this.mType = builder.mPopType;
         this.cancelType = builder.mCancelType;
         this.routePath = builder.mRoutePath;
@@ -67,7 +78,7 @@ public class Popi implements Comparable<Popi> {
         }
     }
 
-    public int getPopId() {
+    public long getPopId() {
         return popId;
     }
 
@@ -120,19 +131,50 @@ public class Popi implements Comparable<Popi> {
         return priority;
     }
 
+    public void pushToQueue() {
+        PopManager.getInstance(mContext).pushToQueue(this);
+    }
+
+    public void show(){
+        PopManager.getInstance(mContext).pushToQueue(this);
+        //如果自己并不处于队列的第一个就不显示
+        if(PopManager.getInstance(mContext).isPopiFirstTheQueue(this)){
+            PopUtils.Log("isFirst"+mPopDesc);
+            PopManager.getInstance(content.getLayerContext()).showNextPopi();
+        }else {
+            PopUtils.Log("isNotFirst"+mPopDesc);
+        }
+    }
+
+
+    public static Builder getBuilder(){
+        return new Builder();
+    }
 
     public static class Builder {
 
-        private LayerLifecycle mPopLayerView;
+        private PopLayerView mPopLayerView;
         private PopType mPopType;
         private int maxShowCount=Integer.MAX_VALUE - 1;
-        private int mPopId;
+        private long mPopId;
         private long mBeginDate=154883431L;
         private long mEndDate=15488343130L;
         private int mPriority;
         private String mRoutePath;
         private int mCancelType=TRIGGER_CANCEL;
         private int maxShowTimeLength=60;
+        private Context mContext;
+        private String  popDesc;
+
+        public Builder() {
+
+        }
+
+        public Builder setDesc(String  str) {
+            this.popDesc = str;
+            return this;
+        }
+
 
         public Builder setMaxShowTimeLength(int maxShowTimeLength) {
             this.maxShowTimeLength = maxShowTimeLength;
@@ -140,7 +182,15 @@ public class Popi implements Comparable<Popi> {
         }
 
         public Builder setLayerView(PopLayerView mPopLayerView) {
-            this.mPopLayerView = mPopLayerView.getiLayerStrategy();
+            this.mPopLayerView = mPopLayerView;
+            this.mContext=mPopLayerView.getContext();
+            mPopLayerView.setOnPopDismissListener(new PopLayerView.onPopDismissListener() {
+                @Override
+                public void onDismiss() {
+                    PopManager.getInstance(mContext).onPopDimiss();
+                    TaskManagerV1.getInstance(mContext).onPopDimiss();
+                }
+            });
             return this;
         }
 
@@ -154,7 +204,7 @@ public class Popi implements Comparable<Popi> {
             return this;
         }
 
-        public Builder setmPopId(int mPopId) {
+        public Builder setmPopId(long mPopId) {
             this.mPopId = mPopId;
             return this;
         }
@@ -188,9 +238,7 @@ public class Popi implements Comparable<Popi> {
             return new Popi(this);
         }
 
-        public void pushToQueue() {
-            PopManager.getInstance(mPopLayerView.getLayerContext()).pushToQueue(build());
-        }
+
 
     }
 

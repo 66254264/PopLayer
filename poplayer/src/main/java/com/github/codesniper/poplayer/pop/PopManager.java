@@ -30,6 +30,7 @@ public class PopManager implements PopDismissListener {
 
     private PopCallback popCallback;
 
+
     public void setPopCallback(PopCallback popCallback) {
         this.popCallback = popCallback;
     }
@@ -41,7 +42,7 @@ public class PopManager implements PopDismissListener {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            mPopi.getContent().dissmissLayer(mContext);
+            mPopi.getContent().dissmissLayer();
         }
     };
 
@@ -99,6 +100,15 @@ public class PopManager implements PopDismissListener {
     }
 
 
+    public boolean isPopiFirstTheQueue(Popi popi){
+        Popi first=queue.element();
+        if(first==popi){
+            return true;
+        }
+        return false;
+    }
+
+
     /**
      * 只有当前队列中 弹窗为1 才能进行
      */
@@ -139,7 +149,7 @@ public class PopManager implements PopDismissListener {
             }
 
             //显示弹窗
-            mPopi.getContent().showLayer(mContext);
+            mPopi.getContent().showLayer();
 
             if(popCallback!=null) popCallback.onPopShowSuccess();
 
@@ -165,8 +175,8 @@ public class PopManager implements PopDismissListener {
     public void clear() {
         queue.clear();
         if (mPopi != null) {
-            mPopi.getContent().dissmissLayer(mContext);
-            mPopi.getContent().recycleLayer(mContext);
+            mPopi.getContent().dissmissLayer();
+            mPopi.getContent().recycleLayer();
         }
     }
 
